@@ -98,7 +98,33 @@ find_function(const char *const fname) {
      * It may also be useful to look to kernel symbol table for symbols defined
      * in assembly. */
 
-    // LAB 3: Your code here:
+#ifdef CONFIG_KSPACE
+    struct {
+        const char *fname;
+        uintptr_t address;
+    } sys_call_table[] = {
+            {"sys_yield", (uintptr_t)sys_yield},
+            {"sys_exit", (uintptr_t)sys_exit},
+    };
+
+    for (size_t i = 0; i < sizeof(sys_call_table) / sizeof(*sys_call_table); ++i) {
+        if (!strcmp(sys_call_table[i].fname, fname)) {
+            return sys_call_table[i].address;
+        }
+    }
+#endif // CONFIG_KSPACE
+
+    struct Dwarf_Addrs addrs;
+    load_kernel_dwarf_info(&addrs);
+
+    uintptr_t fn_addr = 0;
+    if (!naive_address_by_fname(&addrs, fname, &fn_addr) && fn_addr) {
+        return fn_addr;
+    }
+
+    if (!address_by_fname(&addrs, fname, &fn_addr) && fn_addr) {
+        return fn_addr;
+    }
 
     return 0;
 }
