@@ -1,9 +1,54 @@
-echo + target remote localhost:1234\n
-target remote localhost:1234
+python
+import os
+# Note: Replace "readelf" with path to binary if it is not in your PATH.
+READELF_BINARY = 'readelf'
 
-# If this fails, it's probably because your GDB doesn't support ELF.
-# Look at the tools page at
-#  http://pdos.csail.mit.edu/6.828/2009/tools.html
-# for instructions on building GDB with ELF support.
-echo + symbol-file obj/kern/kernel\n
-symbol-file obj/kern/kernel
+class AddSymbolFileAuto (gdb.Command):
+    """Load symbols from FILE, assuming FILE has been dynamically loaded (auto-address).
+Usage: add-symbol-file-auto FILE [-readnow | -readnever]
+The necessary starting address of the file's text is resolved by 'readelf'."""
+    def __init__(self):
+        super(AddSymbolFileAuto, self).__init__("add-symbol-file-auto", gdb.COMMAND_FILES)
+
+    def invoke(self, solibpath, from_tty):
+        from os import path
+        self.dont_repeat()
+        print(os.path.abspath('.'))
+        if os.path.exists(solibpath) == False:
+            print ("{0}: No such file or directory." .format(solibpath))
+            return
+        offset = self.get_text_offset(solibpath)
+        print(offset)
+        gdb_cmd = "add-symbol-file %s %s" % (solibpath, offset)
+        print(gdb_cmd)
+        gdb.execute(gdb_cmd, from_tty)
+
+    def get_text_offset(self, solibpath):
+        import subprocess
+        elfres = subprocess.check_output([READELF_BINARY, "-WS", solibpath])
+        for line in elfres.splitlines():
+            if b'] .text ' in line:
+                return "0x" + (line.split()[4]).decode('ASCII')
+        return ""  # TODO: Raise error when offset is not found?
+
+    def complete(self, text, word):
+        return gdb.COMPLETE_FILENAME
+
+AddSymbolFileAuto()
+end
+
+source ../OpenCorePkg/Debug/Scripts/gdb_uefi.py
+
+target remote localhost:8864
+set arch i386:x86-64:intel
+set pagination off
+
+reload-uefi
+b DebugBreak
+
+add-symbol-file-auto obj/kern/kernel
+add-symbol-file-auto obj/prog/test1
+add-symbol-file-auto obj/prog/test2
+add-symbol-file-auto obj/prog/test3
+
+set output-radix 16
