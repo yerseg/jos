@@ -8,6 +8,8 @@
 #include <kern/kdebug.h>
 #include <inc/uefi.h>
 
+#include <limits.h>
+
 void
 load_kernel_dwarf_info(struct Dwarf_Addrs *addrs) {
     addrs->aranges_begin = (uint8_t *)(uefi_lp->DebugArangesStart);
@@ -61,20 +63,27 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info) {
     strncpy(info->rip_file, tmp_buf, sizeof(info->rip_file));
 
     /* Find line number corresponding to given address.
-    * Hint: note that we need the address of `call` instruction, but rip holds
-    * address of the next instruction, so we should substract 5 from it.
-    * Hint: use line_for_address from kern/dwarf_lines.c */
+     * Hint: note that we need the address of `call` instruction, but rip holds
+     * address of the next instruction, so we should substract 5 from it.
+     * Hint: use line_for_address from kern/dwarf_lines.c */
 
-    // LAB 2: Your res here:
+    res = line_for_address(&addrs, addr - 5, line_offset, &info->rip_line);
+    if (res < 0) goto error;
 
     /* Find function name corresponding to given address.
-    * Hint: note that we need the address of `call` instruction, but rip holds
-    * address of the next instruction, so we should substract 5 from it.
-    * Hint: use function_by_info from kern/dwarf.c
-    * Hint: info->rip_fn_name can be not NULL-terminated,
-    * string returned by function_by_info will always be */
+     * Hint: note that we need the address of `call` instruction, but rip holds
+     * address of the next instruction, so we should substract 5 from it.
+     * Hint: use function_by_info from kern/dwarf.c
+     * Hint: info->rip_fn_name can be not NULL-terminated,
+     * string returned by function_by_info will always be */
 
-    // LAB 2: Your res here:
+    res = function_by_info(&addrs, addr - 5, offset, &tmp_buf, &info->rip_fn_addr);
+    if (res < 0) goto error;
+
+    size_t len = strnlen(tmp_buf, sizeof(info->rip_fn_name));
+    assert(len <= INT_MAX);
+    info->rip_fn_namelen = len; // unsafe cast here but we have check on the upside
+    strncpy(info->rip_fn_name, tmp_buf, sizeof(info->rip_fn_name));
 
 error:
     return res;
