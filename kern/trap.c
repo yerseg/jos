@@ -103,9 +103,6 @@ trap_init(void) {
 
     pic_irq_unmask(IRQ_CLOCK);
 
-    // LAB 4: Your code here
-    // LAB 5: Your code here
-
     /* Per-CPU setup */
     trap_init_percpu();
 }
