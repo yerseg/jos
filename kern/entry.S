@@ -45,6 +45,7 @@ save_trapframe_syscall:
     # fallthrough
 
 save_trapframe:
+    cli
     # Guard to avoid hard to debug errors due to cli misusage.
     orl $FL_IF, saved_rflags(%rip)
 
