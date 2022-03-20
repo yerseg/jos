@@ -98,18 +98,7 @@ trap_init(void) {
     // LAB 4: Your code here
     // LAB 5: Your code here
     extern void (*clock_thdlr)(void);
-
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_off_15_0 = (uint64_t)((uintptr_t)(&clock_thdlr)) & 0xFFFF;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_ss = GD_KT;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_ist = 0;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_rsv1 = 0;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_type = 0 ? STS_TG64 : STS_IG64;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_s = 0;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_dpl = 0;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_p = 1;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_off_31_16 = ((uint64_t)((uintptr_t)(&clock_thdlr)) >> 16) & 0xFFFF;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_off_32_63 = ((uint64_t)((uintptr_t)(&clock_thdlr)) >> 32) & 0xFFFFFFFF;
-    idt[IRQ_OFFSET + IRQ_CLOCK].gd_rsv2 = 0;
+    idt[IRQ_OFFSET + IRQ_CLOCK] = GATE(0, GD_KT, (uintptr_t)&clock_thdlr, 0);
 
     pic_irq_unmask(IRQ_CLOCK);
 
