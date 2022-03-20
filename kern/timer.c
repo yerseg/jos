@@ -322,11 +322,16 @@ hpet_handle_interrupts_tim1(void) {
  * about pause instruction. */
 uint64_t
 hpet_cpu_frequency(void) {
-    static uint64_t cpu_freq;
+    uint64_t first = hpet_get_main_cnt();
+    uint64_t first_tsc = read_tsc();
+    uint64_t next = first;
+    uint64_t eps = hpetFreq / 10;
 
-    // LAB 5: Your code here
+    while (next - first < eps) {
+        next = hpet_get_main_cnt();
+    }
 
-    return cpu_freq;
+    return (read_tsc() - first_tsc) * 10;
 }
 
 uint32_t
@@ -340,9 +345,22 @@ pmtimer_get_timeval(void) {
  *      can be 24-bit or 32-bit. */
 uint64_t
 pmtimer_cpu_frequency(void) {
-    static uint64_t cpu_freq;
+    uint32_t first = pmtimer_get_timeval();
+    uint64_t first_tsc = read_tsc();
+    uint32_t next = first;
+    uint64_t d = 0;
+    uint64_t eps = PM_FREQ / 10;
 
-    // LAB 5: Your code here
+    while (d < eps) {
+        next = pmtimer_get_timeval();
+        if (first - next <= 0xFFFFFF) {
+            d = next - first + 0xFFFFFF;
+        } else if (first - next > 0) {
+            d = next - first + 0xFFFFFFFF;
+        } else {
+            d = next- first;
+        }
+    }
 
-    return cpu_freq;
+    return (read_tsc() - first_tsc) * 10;
 }
