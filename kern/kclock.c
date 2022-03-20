@@ -59,9 +59,14 @@ rtc_timer_pic_handle(void) {
 
 void
 rtc_timer_init(void) {
-    uint8_t reg_b = cmos_read8(RTC_BREG);
-    reg_b |= RTC_PIE;
-    cmos_write8(RTC_BREG, reg_b);
+    uint8_t reg = cmos_read8(RTC_BREG);
+    reg |= RTC_PIE;
+    cmos_write8(RTC_BREG, reg);
+
+    // Freq set to 0.5s
+    reg = cmos_read8(RTC_AREG);
+    reg |= 0x0f;
+    cmos_write8(RTC_AREG, reg);
 }
 
 uint8_t
