@@ -45,6 +45,7 @@ save_trapframe_syscall:
     # fallthrough
 
 save_trapframe:
+    cli
     # Guard to avoid hard to debug errors due to cli misusage.
     orl $FL_IF, saved_rflags(%rip)
 
@@ -66,6 +67,7 @@ save_trapframe:
 .globl sys_yield
 .type  sys_yield, @function
 sys_yield:
+    cli
     call save_trapframe_syscall
     call csys_yield
     jmp .
