@@ -47,8 +47,8 @@ cmos_read16(uint8_t reg) {
 
 void
 rtc_timer_pic_interrupt(void) {
-    // LAB 4: Your code here
     // Enable PIC interrupts.
+    pic_irq_unmask(IRQ_CLOCK);
 }
 
 void
