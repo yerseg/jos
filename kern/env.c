@@ -31,8 +31,6 @@ struct Env *envs = NULL;
  * (linked by Env->env_link) */
 static struct Env *env_free_list;
 
-static volatile int Debug = 1;
-
 /* NOTE: Should be at least LOGNENV */
 #define ENVGENSHIFT 12
 
