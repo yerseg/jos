@@ -15,6 +15,7 @@
 #include <kern/timer.h>
 #include <kern/env.h>
 #include <kern/trap.h>
+#include <kern/kclock.h>
 
 #define WHITESPACE "\t\r\n "
 #define MAXARGS    16
@@ -68,7 +69,28 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf) {
 
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf) {
-    // LAB 2: Your code here
+    struct StackFrame {
+        struct StackFrame *rbp;
+        uint64_t rip;
+    };
+
+    struct StackFrame *stack = (struct StackFrame *)read_rbp();
+    struct Ripdebuginfo dbg_info;
+
+    cprintf("Stack backtrace:\n");
+    while (stack) {
+        debuginfo_rip(stack->rip, &dbg_info);
+        cprintf("  rbp %016lx  rip %016lx\n", (uint64_t)(uint64_t *)stack, stack->rip);
+        cprintf(
+                "    %s:%d: %.*s+%ld\n",
+                dbg_info.rip_file,
+                dbg_info.rip_line,
+                dbg_info.rip_fn_namelen,
+                dbg_info.rip_fn_name,
+                stack->rip - dbg_info.rip_fn_addr);
+
+        stack = stack->rbp;
+    }
 
     return 0;
 }
@@ -80,7 +102,16 @@ mon_dumpcmos(int argc, char **argv, struct Trapframe *tf) {
     // 10: 00 ..
     // Make sure you understand the values read.
     // Hint: Use cmos_read8()/cmos_write8() functions.
-    // LAB 4: Your code here
+    
+    for (uint8_t i = 0; i < CMOS_SIZE; ++i) {
+        if (i % 16 == 0) {
+            cprintf("\n%02X: ", i);
+        }
+
+        cprintf("%02X ", cmos_read8(i));
+    }
+
+    cprintf("\n");
 
     return 0;
 }

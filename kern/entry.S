@@ -45,6 +45,7 @@ save_trapframe_syscall:
     # fallthrough
 
 save_trapframe:
+    cli
     # Guard to avoid hard to debug errors due to cli misusage.
     orl $FL_IF, saved_rflags(%rip)
 
@@ -70,10 +71,13 @@ sys_yield:
     call csys_yield
     jmp .
 
-# LAB 3: Your code here:
 .globl sys_exit
 .type  sys_exit, @function
 sys_exit:
+    cli
+    leaq bootstacktop(%rip), %rsp
+    xor %rbp, %rbp
+    call csys_exit
     jmp .
 
 #endif
