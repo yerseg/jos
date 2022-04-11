@@ -188,6 +188,7 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     struct Elf *const header = (struct Elf *)binary;
     struct Secthdr *const sh_begin = (struct Secthdr *)(binary + header->e_shoff);
     struct Secthdr *const sh_end = sh_begin + header->e_shnum;
+    const char *shstr  = (char *)binary + (sh_begin + header->e_shstrndx)->sh_offset;
 
     // assert(sh_end <= binary_end);
 
@@ -196,7 +197,9 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     const char *str_table = NULL;
 
     for (struct Secthdr *sh = sh_begin; sh < sh_end; ++sh) {
-        if (sh->sh_type == ELF_SHT_STRTAB && (const uint8_t *)sh - (const uint8_t *)sh_end != header->e_shstrndx) {
+        if (sh->sh_type == ELF_SHT_STRTAB && 
+            (const uint8_t *)sh - (const uint8_t *)sh_end != header->e_shstrndx && 
+            !strcmp(".strtab", shstr + sh->sh_name)) {
             str_table = (const char *)(binary + sh->sh_offset);
         }
 
