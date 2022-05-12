@@ -217,13 +217,14 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     // assert(sym_table_end <= binary_end);
 
     for (struct Elf64_Sym *sym = sym_table_begin; sym < sym_table_end; ++sym) {
-        if (ELF32_ST_BIND(sym->st_info) == STB_GLOBAL &&
-            ELF32_ST_TYPE(sym->st_info) == STT_OBJECT &&
+        if (ELF64_ST_BIND(sym->st_info) == STB_GLOBAL &&
+            ELF64_ST_TYPE(sym->st_info) == STT_OBJECT &&
             image_start <= sym->st_value && sym->st_value < image_end) {
 
             uintptr_t fn_ptr = 0;
             const char *fn_name = str_table + sym->st_name;
             if ((fn_ptr = find_function(fn_name))) {
+                //TODO: possible not-aligned access, fix needed
                 *((uintptr_t *)(sym->st_value)) = fn_ptr;
                 cprintf("bind_functions: function resolved - %s\n", fn_name);
                 continue;
