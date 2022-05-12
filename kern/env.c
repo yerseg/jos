@@ -190,6 +190,7 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     struct Elf *const header = (struct Elf *)binary;
     struct Secthdr *const sh_begin = (struct Secthdr *)(binary + header->e_shoff);
     struct Secthdr *const sh_end = sh_begin + header->e_shnum;
+    const char *shstr  = (char *)binary + (sh_begin + header->e_shstrndx)->sh_offset;
 
     // assert(sh_end <= binary_end);
 
@@ -198,7 +199,9 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     const char *str_table = NULL;
 
     for (struct Secthdr *sh = sh_begin; sh < sh_end; ++sh) {
-        if (sh->sh_type == ELF_SHT_STRTAB && (const uint8_t *)sh - (const uint8_t *)sh_end != header->e_shstrndx) {
+        if (sh->sh_type == ELF_SHT_STRTAB && 
+            (const uint8_t *)sh - (const uint8_t *)sh_end != header->e_shstrndx && 
+            !strcmp(".strtab", shstr + sh->sh_name)) {
             str_table = (const char *)(binary + sh->sh_offset);
         }
 
@@ -216,13 +219,14 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
     // assert(sym_table_end <= binary_end);
 
     for (struct Elf64_Sym *sym = sym_table_begin; sym < sym_table_end; ++sym) {
-        if (ELF32_ST_BIND(sym->st_info) == STB_GLOBAL &&
-            ELF32_ST_TYPE(sym->st_info) == STT_OBJECT &&
+        if (ELF64_ST_BIND(sym->st_info) == STB_GLOBAL &&
+            ELF64_ST_TYPE(sym->st_info) == STT_OBJECT &&
             image_start <= sym->st_value && sym->st_value < image_end) {
 
             uintptr_t fn_ptr = 0;
             const char *fn_name = str_table + sym->st_name;
             if ((fn_ptr = find_function(fn_name))) {
+                //TODO: possible not-aligned access, fix needed
                 *((uintptr_t *)(sym->st_value)) = fn_ptr;
                 cprintf("bind_functions: function resolved - %s\n", fn_name);
                 continue;
