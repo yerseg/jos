@@ -201,19 +201,19 @@ timer_start(const char *name) {
     for (size_t i = 0; i < MAX_TIMERS; ++i) {
         if (timertab[i].timer_name && !strcmp(timertab[i].timer_name, name)) {
             timer_started = 1;
-			timer_id = i;
-			timer = read_tsc();
-			freq = timertab[timer_id].get_cpu_freq();
-			break;	
+			      timer_id = i;
+			      timer = read_tsc();
+			      freq = timertab[timer_id].get_cpu_freq();
+			      break;	
         }
     }
 }
 
 void
 timer_stop(void) {
-    if (!timer_started || timer_id < 0) {
-		print_timer_error();
-		return;
+  if (!timer_started || timer_id < 0) {
+      print_timer_error();
+		  return;
 	}
 
 	timer_started = 0;
@@ -224,9 +224,9 @@ timer_stop(void) {
 void
 timer_cpu_frequency(const char *name) {
     for (size_t i = 0; i < MAX_TIMERS; ++i) {
-		if (timertab[i].timer_name && !strcmp(timertab[i].timer_name, name)) {
-			cprintf("%lu\n", timertab[i].get_cpu_freq());
-			break;
-		}
-	}
+		    if (timertab[i].timer_name && !strcmp(timertab[i].timer_name, name)) {
+			      cprintf("%lu\n", timertab[i].get_cpu_freq());
+			      break;
+        }
+	  }
 }

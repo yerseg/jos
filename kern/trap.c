@@ -95,6 +95,8 @@ trapname(int trapno) {
 
 void
 trap_init(void) {
+    // LAB 4: Your code here
+    // LAB 5: Your code here
     extern void (*clock_thdlr)(void);
     extern void (*timer_thdlr)(void);
     
