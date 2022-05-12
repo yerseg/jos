@@ -358,7 +358,7 @@ pmtimer_cpu_frequency(void) {
         } else if (first - next > 0) {
             d = next - first + 0xFFFFFFFF;
         } else {
-            d = next- first;
+            d = next - first;
         }
     }
 
