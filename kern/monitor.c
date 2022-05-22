@@ -16,6 +16,7 @@
 #include <kern/env.h>
 #include <kern/pmap.h>
 #include <kern/trap.h>
+#include <kern/kclock.h>
 
 #define WHITESPACE "\t\r\n "
 #define MAXARGS    16
@@ -44,6 +45,10 @@ static struct Command commands[] = {
         {"kerninfo", "Display information about the kernel", mon_kerninfo},
         {"backtrace", "Print stack backtrace", mon_backtrace},
         {"dumpcmos", "Print CMOS contents", mon_dumpcmos},
+        {"timer_start", "Start timer", mon_start},
+        {"timer_stop", "Stop timer", mon_stop},
+        {"timer_freq", "Timer frequency", mon_frequency},
+        {"mon_memory", "Memory lists", mon_memory},
 };
 #define NCOMMANDS (sizeof(commands) / sizeof(commands[0]))
 
@@ -72,7 +77,28 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf) {
 
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf) {
-    // LAB 2: Your code here
+    struct StackFrame {
+        struct StackFrame *rbp;
+        uint64_t rip;
+    };
+
+    struct StackFrame *stack = (struct StackFrame *)read_rbp();
+    struct Ripdebuginfo dbg_info;
+
+    cprintf("Stack backtrace:\n");
+    while (stack) {
+        debuginfo_rip(stack->rip, &dbg_info);
+        cprintf("  rbp %016lx  rip %016lx\n", (uint64_t)(uint64_t *)stack, stack->rip);
+        cprintf(
+                "    %s:%d: %.*s+%ld\n",
+                dbg_info.rip_file,
+                dbg_info.rip_line,
+                dbg_info.rip_fn_namelen,
+                dbg_info.rip_fn_name,
+                stack->rip - dbg_info.rip_fn_addr);
+
+        stack = stack->rbp;
+    }
 
     return 0;
 }
@@ -84,22 +110,72 @@ mon_dumpcmos(int argc, char **argv, struct Trapframe *tf) {
     // 10: 00 ..
     // Make sure you understand the values read.
     // Hint: Use cmos_read8()/cmos_write8() functions.
-    // LAB 4: Your code here
+    
+    for (uint8_t i = 0; i < CMOS_SIZE; ++i) {
+        if (i % 16 == 0) {
+            cprintf("\n%02X: ", i);
+        }
+
+        cprintf("%02X ", cmos_read8(i));
+    }
+
+    cprintf("\n");
 
     return 0;
 }
 
 /* Implement timer_start (mon_start), timer_stop (mon_stop), timer_freq (mon_frequency) commands. */
-// LAB 5: Your code here:
+
+int
+mon_start(int argc, char** argv, struct Trapframe* tf) {
+    if (argc < 2) {
+        cprintf("Not enough arguments!");
+        return 1;
+    }
+
+    timer_start(argv[1]);
+    return 0;
+}
+
+int
+mon_stop(int argc, char** argv, struct Trapframe* tf) {
+    timer_stop();
+    return 0;
+}
+
+int
+mon_frequency(int argc, char** argv, struct Trapframe* tf) {
+    if (argc < 2) {
+        cprintf("Not enough arguments!");
+        return 1;
+    }
+    
+    timer_cpu_frequency(argv[1]);
+    return 0;
+}
 
 /* Implement memory (mon_memory) command.
  * This command should call dump_memory_lists()
  */
-// LAB 6: Your code here
+int 
+mon_memory(int argc, char **argv, struct Trapframe *tf) {
+    dump_memory_lists();
+    return 0;
+}
 
 /* Implement mon_pagetable() and mon_virt()
  * (using dump_virtual_tree(), dump_page_table())*/
-// LAB 7: Your code here
+int
+mon_virt(int argc, char **argv, struct Trapframe *tf) {
+    dump_virtual_tree(&root, 0);
+    return 0;
+}
+
+int
+mon_pagetable(int argc, char **argv, struct Trapframe *tf) {
+    dump_page_table(kspace.pml4);
+    return 0;
+}
 
 /* Kernel monitor command interpreter */
 

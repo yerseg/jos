@@ -72,6 +72,50 @@ HandleProtocolFallback (
 }
 
 /**
+
+  @param[in]  GraphicsOutput   GOP protocol.
+
+  @retval EFI_SUCCESS on success.
+ **/
+STATIC
+EFI_STATUS
+SetComfortResolutionMode (
+  IN  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput              
+)
+{
+  EFI_STATUS                            Status;
+  UINT32                                GraphicsModeIndex;
+  UINTN                                 GraphicsModeInfoSize;
+  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION  *GraphicsModeInfo;
+
+  ASSERT (GraphicsOutput != NULL);
+
+  for (GraphicsModeIndex = 0; GraphicsModeIndex < GraphicsOutput->Mode->MaxMode; ++GraphicsModeIndex) {
+    Status = GraphicsOutput->QueryMode (GraphicsOutput, GraphicsModeIndex, &GraphicsModeInfoSize, &GraphicsModeInfo);
+    
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "JOS: Cannot query GOP mode - %r\n", Status));
+      return Status;
+    }
+    
+    if (GraphicsModeInfo->HorizontalResolution * GraphicsModeInfo->VerticalResolution >= 1280 * 720) {
+      ++GraphicsModeIndex;
+      break;
+    }
+  }
+
+  Status = GraphicsOutput->SetMode (GraphicsOutput, --GraphicsModeIndex);
+  if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "JOS: Cannot set GOP mode with number %d - %r\n", GraphicsModeIndex, Status));
+      return Status;
+  } 
+
+  DEBUG ((DEBUG_INFO, "JOS: GOP mode with number %d was set, resolution - %dx%d\n", GraphicsModeIndex, GraphicsModeInfo->HorizontalResolution, GraphicsModeInfo->VerticalResolution));
+
+  return EFI_SUCCESS;
+}
+
+/**
   Initialise graphics rendering and set loader params.
 
   @param[out] LoaderParams  Loader parameters for graphics configuration.
@@ -104,16 +148,11 @@ InitGraphics (
     return Status;
   }
 
-  //
-  // LAB 1: Your code here.
-  //
-  // Switch to the maximum or any other resolution of your preference.
-  // Refer to Graphics Output Protocol description in UEFI spec for
-  // more details.
-  //
-  // Hint: Use GetMode/SetMode functions.
-  //
-
+  Status = SetComfortResolutionMode(GraphicsOutput);
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "JOS: Cannot set GOP mode with comfort resolution - %r\n", Status));
+    return Status;
+  }
 
   //
   // Fill screen with black.
@@ -975,7 +1014,7 @@ UefiMain (
   UINTN              EntryPoint;
   VOID               *GateData;
 
-#if 1 ///< Uncomment to await debugging
+#ifdef ALLOW_DEBUGGER_AWAITING
   volatile BOOLEAN   Connected;
   DEBUG ((DEBUG_INFO, "JOS: Awaiting debugger connection\n"));
 
