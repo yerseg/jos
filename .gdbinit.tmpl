@@ -43,12 +43,12 @@ target remote localhost:8864
 set arch i386:x86-64:intel
 set pagination off
 
-reload-uefi
-b DebugBreak
-
 add-symbol-file-auto obj/kern/kernel
 add-symbol-file-auto obj/prog/test1
 add-symbol-file-auto obj/prog/test2
 add-symbol-file-auto obj/prog/test3
+
+reload-uefi
+b DebugBreak
 
 set output-radix 16
