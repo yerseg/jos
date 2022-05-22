@@ -165,7 +165,17 @@ mon_memory(int argc, char **argv, struct Trapframe *tf) {
 
 /* Implement mon_pagetable() and mon_virt()
  * (using dump_virtual_tree(), dump_page_table())*/
-// LAB 7: Your code here
+int
+mon_virt(int argc, char **argv, struct Trapframe *tf) {
+    dump_virtual_tree(&root, 0);
+    return 0;
+}
+
+int
+mon_pagetable(int argc, char **argv, struct Trapframe *tf) {
+    dump_page_table(kspace.pml4);
+    return 0;
+}
 
 /* Kernel monitor command interpreter */
 
