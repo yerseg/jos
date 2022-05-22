@@ -461,8 +461,8 @@ dump_virtual_tree(struct Page *node, int class) {
     // LAB 7: Your code here
 }
 
-struct Page*
-find_page(uintptr_t addr){
+struct Page *
+find_page(uintptr_t addr) {
     struct Page *node = &root;
     while (node->left && node->right) {
         bool right = addr & CLASS_SIZE(node->class - 1);
@@ -474,8 +474,8 @@ find_page(uintptr_t addr){
 void
 dump_memory_lists(void) {
     uintptr_t addr = 0;
-    struct Page* page = find_page(addr);
-    struct Page* next_page = page;
+    struct Page *page = find_page(addr);
+    struct Page *next_page = page;
     while(addr < max_memory_map_addr){
         addr = addr + CLASS_SIZE(next_page->class);
         next_page = find_page(addr);
