@@ -113,6 +113,9 @@ int force_alloc_page(struct AddressSpace *spc, uintptr_t va, int maxclass);
 void dump_page_table(pte_t *pml4);
 void dump_memory_lists(void);
 void dump_virtual_tree(struct Page *node, int class);
+void run_mem_test_alloc_all_pages(void);
+void run_mem_test_alloc_all_pages_but_one(void);
+void run_mem_test_alloc_all_pages_but_two(void);
 
 void *kzalloc_region(size_t size);
 
