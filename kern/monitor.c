@@ -33,6 +33,8 @@ int mon_memory(int argc, char **argv, struct Trapframe *tf);
 int mon_test_memory_all(int argc, char **argv, struct Trapframe *tf);
 int mon_test_memory_one(int argc, char **argv, struct Trapframe *tf);
 int mon_test_memory_two(int argc, char **argv, struct Trapframe *tf);
+int mon_pagetable(int argc, char **argv, struct Trapframe *tf);
+int mon_virt(int argc, char **argv, struct Trapframe *tf);
 
 struct Command {
     const char *name;
@@ -179,6 +181,18 @@ int mon_test_memory_one(int argc, char **argv, struct Trapframe *tf) {
 
 int mon_test_memory_two(int argc, char **argv, struct Trapframe *tf) {
     run_mem_test_alloc_all_pages_but_two();
+
+/* Implement mon_pagetable() and mon_virt()
+ * (using dump_virtual_tree(), dump_page_table())*/
+int
+mon_virt(int argc, char **argv, struct Trapframe *tf) {
+    dump_virtual_tree(&root, 0);
+    return 0;
+}
+
+int
+mon_pagetable(int argc, char **argv, struct Trapframe *tf) {
+    dump_page_table(kspace.pml4);
     return 0;
 }
 
