@@ -91,22 +91,21 @@ env_init(void) {
 
     /* Allocate envs array with kzalloc_region
      * (don't forget about rounding) */
-    envs = (struct Env *)kzalloc_region(sizeof(*envs) * NENV);
+	envs = (struct Env *)kzalloc_region(sizeof(*envs) * NENV);
     memset(envs, 0, sizeof(*envs) * NENV);
 
     /* Map envs to UENVS read-only,
      * but user-accessible (with PROT_USER_ set) */
-    if (map_region(current_space, UENVS, &kspace, (uintptr_t)envs, UENVS_SIZE, PROT_R | PROT_USER_))
+	if (map_region(current_space, UENVS, &kspace, (uintptr_t)envs, UENVS_SIZE, PROT_R | PROT_USER_))
        panic("Cannot map physical region at %p of size %lld", (void *)envs, UENVS_SIZE);
-
+    
     /* Set up envs array */
     memset(envs, 0, sizeof(envs) * sizeof(struct Env));
 
-    for (size_t i = 0; i < sizeof(envs) - 1; ++i) {
-        envs[i].env_link = envs + i + 1;
+    for (size_t i = 0; i < NENV; i++) {
+        envs[NENV - i - 1].env_link = env_free_list;
+        env_free_list = &envs[NENV - i - 1];
     }
-
-    env_free_list = envs;
 }
 
 /* Allocates and initializes a new environment.
@@ -166,8 +165,10 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, enum EnvType type) {
     env->env_tf.tf_ss = GD_KD;
     env->env_tf.tf_cs = GD_KT;
 
-    static const uintptr_t stack_top = 0x2000000;
-    env->env_tf.tf_rsp = stack_top - (env - envs) * PROG_STACK_SIZE;
+    // LAB 3: Your code here:
+    static uintptr_t stack_top = 0x2000000;
+    env->env_tf.tf_rsp = stack_top - (env - envs) * 2 * PAGE_SIZE;
+
 #else
     env->env_tf.tf_ds = GD_UD | 3;
     env->env_tf.tf_es = GD_UD | 3;
