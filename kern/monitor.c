@@ -181,6 +181,8 @@ int mon_test_memory_one(int argc, char **argv, struct Trapframe *tf) {
 
 int mon_test_memory_two(int argc, char **argv, struct Trapframe *tf) {
     run_mem_test_alloc_all_pages_but_two();
+    return 0;
+}
 
 /* Implement mon_pagetable() and mon_virt()
  * (using dump_virtual_tree(), dump_page_table())*/
