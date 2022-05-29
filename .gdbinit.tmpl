@@ -44,9 +44,31 @@ set arch i386:x86-64:intel
 set pagination off
 
 add-symbol-file-auto obj/kern/kernel
+
 add-symbol-file-auto obj/prog/test1
 add-symbol-file-auto obj/prog/test2
 add-symbol-file-auto obj/prog/test3
+add-symbol-file-auto obj/prog/test4
+
+add-symbol-file-auto obj/user/badsegment
+add-symbol-file-auto obj/user/bounds
+add-symbol-file-auto obj/user/breakpoint
+add-symbol-file-auto obj/user/buggyhello
+add-symbol-file-auto obj/user/buggyhello2
+add-symbol-file-auto obj/user/divzero
+add-symbol-file-auto obj/user/evilhello
+add-symbol-file-auto obj/user/faultread
+add-symbol-file-auto obj/user/faultreadkernel
+add-symbol-file-auto obj/user/faultwrite
+add-symbol-file-auto obj/user/faultwritekernel
+add-symbol-file-auto obj/user/hello
+add-symbol-file-auto obj/user/implicitconv
+add-symbol-file-auto obj/user/signedoverflow
+add-symbol-file-auto obj/user/softint
+add-symbol-file-auto obj/user/testbss
+
+reload-uefi
+b DebugBreak
 
 reload-uefi
 b DebugBreak

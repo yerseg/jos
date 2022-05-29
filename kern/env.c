@@ -91,14 +91,15 @@ env_init(void) {
 
     /* Allocate envs array with kzalloc_region
      * (don't forget about rounding) */
-    // LAB 8: Your code here
+    envs = (struct Env *)kzalloc_region(sizeof(*envs) * NENV);
+    memset(envs, 0, sizeof(*envs) * NENV);
 
     /* Map envs to UENVS read-only,
      * but user-accessible (with PROT_USER_ set) */
-    // LAB 8: Your code here
+    if (map_region(current_space, UENVS, &kspace, (uintptr_t)envs, UENVS_SIZE, PROT_R | PROT_USER_))
+       panic("Cannot map physical region at %p of size %lld", (void *)envs, UENVS_SIZE);
 
     /* Set up envs array */
-
     memset(envs, 0, sizeof(envs) * sizeof(struct Env));
 
     for (size_t i = 0; i < sizeof(envs) - 1; ++i) {
@@ -304,29 +305,36 @@ bind_functions(struct Env *env, uint8_t *binary, size_t size, uintptr_t image_st
  *   What?  (See env_run() and env_pop_tf() below.) */
 static int
 load_icode(struct Env *env, uint8_t *binary, size_t size) {
-    // LAB 8: Your code here
     uint8_t *const binary_end = binary + size;
     struct Elf *header = (struct Elf *)binary;
 
     assert(header->e_magic == ELF_MAGIC);
 
+    switch_address_space(&env->address_space);
+
     struct Proghdr *const ph_begin = (struct Proghdr *)(binary + header->e_phoff);
     struct Proghdr *const ph_end = ph_begin + header->e_phnum;
-
-    // assert(ph_end <= binary_end);
 
     for (struct Proghdr *ph = ph_begin; ph < ph_end; ++ph) {
         if (ph->p_type == ELF_PROG_LOAD) {
             assert(ph->p_filesz <= ph->p_memsz);
             assert(binary + ph->p_offset <= binary_end);
 
+            map_region(&env->address_space, ROUNDDOWN((uintptr_t)ph->p_va, PAGE_SIZE), NULL, 0, ROUNDUP((uintptr_t)ph->p_va + ph->p_memsz, PAGE_SIZE) - ROUNDDOWN((uintptr_t)ph->p_va, PAGE_SIZE), PROT_RWX | PROT_USER_ | ALLOC_ZERO); 
             memmove((void *)ph->p_va, binary + ph->p_offset, ph->p_filesz);
             memset(((void *)ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 
+            cprintf("Mapped: 0x%lx\n", ph->p_va);
+
+            switch_address_space(&kspace);
             assert(bind_functions(env, binary, size, ph->p_va + ph->p_filesz, ph->p_va + ph->p_memsz) == 0);
+            switch_address_space(&env->address_space);
         }
     }
 
+    map_region(&env->address_space, USER_STACK_TOP - USER_STACK_SIZE, NULL, 0, USER_STACK_SIZE, PROT_R | PROT_W | PROT_USER_ | ALLOC_ZERO);
+
+    switch_address_space(&kspace);
     env->binary = binary;
     env->env_tf.tf_rip = header->e_entry;
 
@@ -340,18 +348,16 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
  * The new env's parent ID is set to 0.
  */
 void
-env_create(uint8_t *binary, size_t size, enum EnvType type) {
-    // LAB 8: Your code here
-    
+env_create(uint8_t *binary, size_t size, enum EnvType type) {   
     struct Env *env;
     int rc = env_alloc(&env, 0, type);
     if (rc < 0) {
         panic("env_alloc: error, rc = %d", rc);
     }
-
-    assert(load_icode(env, binary, size) == 0);
-
+    
+    env->binary = binary;
     env->env_type = type;
+    assert(load_icode(env, binary, size) == 0);
 }
 
 
@@ -390,7 +396,6 @@ env_destroy(struct Env *env) {
      * ENV_DYING. A zombie environment will be freed the next time
      * it traps to the kernel. */
 
-    // LAB 8: Your code here (set in_page_fault = 0)
     if (env->env_status == ENV_RUNNING && env != curenv) {
         env->env_status = ENV_DYING;
         return;
@@ -399,9 +404,10 @@ env_destroy(struct Env *env) {
     env_free(env);
 
     if (env == curenv) {
-        curenv = NULL;
         sched_yield();
     }
+
+    in_page_fault = 0;
 }
 
 #ifdef CONFIG_KSPACE
@@ -485,9 +491,7 @@ env_run(struct Env *env) {
         cprintf("[%08X] env started: %s\n", env->env_id, state[env->env_status]);
     }
 
-    // LAB 8: Your code here
-
-    if (curenv != NULL) {
+    if (curenv && curenv->env_status == ENV_RUNNING) {
         curenv->env_status = ENV_RUNNABLE;
     }
 
@@ -495,6 +499,7 @@ env_run(struct Env *env) {
     curenv->env_status = ENV_RUNNING;
     ++curenv->env_runs;
 
+    switch_address_space(&curenv->address_space);
     env_pop_tf(&env->env_tf);
     panic("env_run: env_pop_tf returned!");
 

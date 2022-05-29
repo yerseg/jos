@@ -26,17 +26,21 @@ sched_yield(void) {
 
     size_t curr_idx = curenv ? ENVX(curenv->env_id) : 0;
     size_t old_idx = curr_idx;
-    ++curr_idx;
-    for (; curr_idx != old_idx; curr_idx = (curr_idx + 1) % NENV) {
+    while (1) {
+        curr_idx = (curr_idx + 1) % NENV;
         struct Env *env = envs + curr_idx;
+
         if (env->env_status == ENV_RUNNABLE) {
             env_run(env);
-            break;
         }
-    }
 
-    if (curr_idx == old_idx && envs[curr_idx].env_status == ENV_RUNNING) {
-        env_run(envs + curr_idx);
+        if (curr_idx == old_idx) {
+			if (env->env_status == ENV_RUNNING) {
+				env_run(env);
+			}
+
+			break;
+		}
     }
 
     cprintf("Halt\n");
