@@ -30,6 +30,9 @@ int mon_start(int argc, char **argv, struct Trapframe *tf);
 int mon_stop(int argc, char **argv, struct Trapframe *tf);
 int mon_frequency(int argc, char **argv, struct Trapframe *tf);
 int mon_memory(int argc, char **argv, struct Trapframe *tf);
+int mon_test_memory_all(int argc, char **argv, struct Trapframe *tf);
+int mon_test_memory_one(int argc, char **argv, struct Trapframe *tf);
+int mon_test_memory_two(int argc, char **argv, struct Trapframe *tf);
 int mon_pagetable(int argc, char **argv, struct Trapframe *tf);
 int mon_virt(int argc, char **argv, struct Trapframe *tf);
 
@@ -48,7 +51,10 @@ static struct Command commands[] = {
         {"timer_start", "Start timer", mon_start},
         {"timer_stop", "Stop timer", mon_stop},
         {"timer_freq", "Timer frequency", mon_frequency},
-        {"mon_memory", "Memory lists", mon_memory},
+        {"memory", "Memory lists", mon_memory},
+        {"test_memory_all", "", mon_test_memory_all},
+        {"test_memory_one", "", mon_test_memory_one},
+        {"test_memory_two", "", mon_test_memory_two},
 };
 #define NCOMMANDS (sizeof(commands) / sizeof(commands[0]))
 
@@ -162,6 +168,19 @@ mon_memory(int argc, char **argv, struct Trapframe *tf) {
     dump_memory_lists();
     return 0;
 }
+
+int mon_test_memory_all(int argc, char **argv, struct Trapframe *tf) {
+    run_mem_test_alloc_all_pages();
+    return 0;
+}
+
+int mon_test_memory_one(int argc, char **argv, struct Trapframe *tf) {
+    run_mem_test_alloc_all_pages_but_one();
+    return 0;
+}
+
+int mon_test_memory_two(int argc, char **argv, struct Trapframe *tf) {
+    run_mem_test_alloc_all_pages_but_two();
 
 /* Implement mon_pagetable() and mon_virt()
  * (using dump_virtual_tree(), dump_page_table())*/

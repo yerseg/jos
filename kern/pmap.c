@@ -622,19 +622,83 @@ find_page(uintptr_t addr) {
 }
 
 void
+run_mem_test_alloc_all_pages(void) {
+    struct Page *p = NULL;
+    for (int pclass = MAX_CLASS; pclass >= 0 ; --pclass) {
+        while ((p = alloc_page(pclass, 0)))
+        {
+            page_ref(p);
+        }
+    }
+
+    return;
+}
+
+void
+run_mem_test_alloc_all_pages_but_one(void) {
+    struct Page *p = NULL;
+    struct Page *last = NULL;
+    for (int pclass = MAX_CLASS; pclass >= 0 ; --pclass) {
+        while ((p = alloc_page(pclass, 0)))
+        {
+            page_ref(p);
+            last = p;
+        }
+    }
+    
+    page_unref(last);
+
+    return;
+}
+
+void
+run_mem_test_alloc_all_pages_but_two(void) {
+    struct Page *p = NULL;
+    struct Page *last = NULL;
+    struct Page *last1 = NULL;
+    for (int pclass = MAX_CLASS; pclass >= 0 ; --pclass) {
+        while ((p = alloc_page(pclass, 0)))
+        {
+            page_ref(p);
+            last = last1;
+            last1 = p;
+        }
+    }
+
+    page_unref(last);
+    page_unref(last1);
+
+    return;
+}
+
+void
 dump_memory_lists(void) {
-    uintptr_t addr = 0;
-    struct Page *page = find_page(addr);
-    struct Page *next_page = page;
-    while(addr < max_memory_map_addr){
-        addr = addr + CLASS_SIZE(next_page->class);
-        next_page = find_page(addr);
-        if (page->state != next_page->state || addr >= max_memory_map_addr){
-            if (page->state == RESERVED_NODE)
-                cprintf("0x%08lX - 0x%08lX allocated\n", page2pa(page), page2pa(next_page) - 1);
-            else
-                cprintf("0x%08lX - 0x%08lX free\n", page2pa(page), page2pa(next_page) - 1);
-            page = next_page;
+    EFI_MEMORY_DESCRIPTOR *start = (void *)uefi_lp->MemoryMap;
+    EFI_MEMORY_DESCRIPTOR *end = (void *)(uefi_lp->MemoryMap + uefi_lp->MemoryMapSize);
+
+    uint64_t max_mem_addr = 0;
+    uint64_t min_mem_addr = start->PhysicalStart;
+
+    while (start < end) {
+        max_mem_addr = MAX(start->NumberOfPages * EFI_PAGE_SIZE + start->PhysicalStart, max_mem_addr);
+        min_mem_addr = MIN(start->PhysicalStart, min_mem_addr);
+        start = (void *)((uint8_t *)start + uefi_lp->MemoryMapDescriptorSize);
+    }
+
+    struct Page *page = NULL;
+    cprintf("Free pages\n");
+    for (int i = 0; i <= MAX_CLASS; i++) {
+        uint64_t cur_size = CLASS_SIZE(i);
+        uint64_t num = (max_mem_addr - min_mem_addr) / CLASS_SIZE(i);
+        if ((max_mem_addr - min_mem_addr) % CLASS_SIZE(i)) {
+            num = 1;
+        }
+
+        for (uint64_t j = 0; j < num; j++) {
+            if ((page = page_lookup(NULL, min_mem_addr + j * cur_size, i, ALLOCATABLE_NODE, 0)) && page->state == ALLOCATABLE_NODE) {
+                if (!page->refc)
+                    cprintf("physical page address: 0x%016lx    size: %09llu\n", (uint64_t)page->addr << CLASS_BASE, CLASS_SIZE(page->class));
+            }
         }
     }
 }
