@@ -21,7 +21,8 @@ static int
 sys_cputs(const char *s, size_t len) {
     /* Check that the user has permission to read memory [s, s+len).
     * Destroy the environment if not. */
-    user_mem_assert(curenv, s, len, PROT_R | PROT_USER_);
+	user_mem_assert(curenv, s, len, PROT_R | PROT_USER_);
+    cprintf("%.*s", (int)len, s);
     return 0;
 }
 
@@ -77,6 +78,6 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
         case SYS_getenvid: return sys_getenvid();
         case SYS_env_destroy: return sys_env_destroy((envid_t)a1);
     }
-    
+
     return -E_NO_SYS;
 }
