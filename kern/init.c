@@ -131,7 +131,7 @@ i386_init(void) {
     early_boot_pml4_init();
 
     /* Initialize the console.
-    * Can't call cprintf until after we do this! */
+     * Can't call cprintf until after we do this! */
     cons_init();
 
     tsc_calibrate();
@@ -159,6 +159,7 @@ i386_init(void) {
 
 #ifdef CONFIG_KSPACE
     /* Touch all you want */
+
     ENV_CREATE_KERNEL_TYPE(prog_test1);
     ENV_CREATE_KERNEL_TYPE(prog_test2);
     ENV_CREATE_KERNEL_TYPE(prog_test3);
