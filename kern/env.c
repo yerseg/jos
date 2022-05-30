@@ -332,18 +332,14 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
             memset(((void *)ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 
             cprintf("Mapped: 0x%lx\n", ph->p_va);
-
-            switch_address_space(&kspace);
-            assert(bind_functions(env, binary, size, ph->p_va + ph->p_filesz, ph->p_va + ph->p_memsz) == 0);
-            switch_address_space(&env->address_space);
         }
     }
 
     map_region(&env->address_space, USER_STACK_TOP - USER_STACK_SIZE, NULL, 0, USER_STACK_SIZE, PROT_R | PROT_W | PROT_USER_ | ALLOC_ZERO);
-
-    switch_address_space(&kspace);
     env->binary = binary;
     env->env_tf.tf_rip = header->e_entry;
+
+    switch_address_space(&kspace);
 
     return 0;
 }
