@@ -404,6 +404,14 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf) {
     return 0;
 }
 
+/* Return date and time in UNIX timestamp format: seconds passed
+ * from 1970-01-01 00:00:00 UTC. */
+static int
+sys_gettime(void) {
+    // LAB 12: Your code here
+    return 0;
+}
+
 /*
  * This function return the difference between maximal
  * number of references of regions [addr, addr + size] and [addr2,addr2+size2]
@@ -426,6 +434,7 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
     /* Call the function corresponding to the 'syscallno' parameter.
      * Return any appropriate return value. */
 
+    // LAB 12: Your code here
     switch (syscallno)
     {
         case SYS_cputs:                     return sys_cputs((const char *)a1, (size_t)a2);
