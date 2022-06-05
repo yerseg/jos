@@ -276,14 +276,52 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
         fileoffset -= res;
     }
 
-    // LAB 11: Your code here
-
     /* Allocate filesz - memsz in child */
-    /* Allocate filesz in parent to UTEMP */
-    /* seek() fd to fileoffset  */
-    /* read filesz to UTEMP */
-    /* Map read section conents to child */
-    /* Unmap it from parent */
+    filesz = ROUNDUP(va + filesz, PAGE_SIZE) - va;
+    if (memsz > filesz) {
+        res = sys_alloc_region(child, (void*)va + filesz, memsz - filesz, perm);
+        if (res < 0) {
+            cprintf("map_segmen.sys_alloc_regin failed: %i\n", res);
+            return res;
+        }
+    }
 
+    /* Allocate filesz in parent to UTEMP */
+    res = sys_alloc_region(CURENVID, UTEMP, filesz, PROT_RW);
+    if (res < 0) {
+        cprintf("map_segment.sys_alloc_regin failed: %i\n", res);
+        return res;
+    }
+
+    /* seek() fd to fileoffset  */
+    res = seek(fd, fileoffset);
+    if (res < 0) {
+        cprintf("map_segment.seek failed: %i\n", res);
+        return res;
+    }
+
+    /* read filesz to UTEMP */
+    for (int i = 0; i < filesz; i += PAGE_SIZE) {
+        res = readn(fd, UTEMP + i, PAGE_SIZE);
+        if (res < 0) {
+            cprintf("map_segment.readn failed: %i\n", res);
+            return res;
+        }
+    }
+
+    /* Map read section conents to child */
+    res = sys_map_region(CURENVID, UTEMP, child, (void*)va, filesz, perm | PROT_LAZY);
+    if (res < 0) {
+        cprintf("map_segment.sys_map_region failed: %i\n", res);
+        return res;
+    }
+    
+    /* Unmap it from parent */
+    res = sys_unmap_region(CURENVID, UTEMP, filesz);
+    if (res < 0) {
+        cprintf("map_segment.sys_unmap_region failed: %i\n", res);
+        return res;
+    }
+    
     return 0;
 }
