@@ -59,7 +59,17 @@ alloc_block(void) {
      * contains the in-use bits for BLKBITSIZE blocks.  There are
      * super->s_nblocks blocks in the disk altogether. */
 
-    // LAB 10: Your code here
+    uint32_t blockno = 0;
+    while(!block_is_free(blockno) && blockno < super->s_nblocks) {
+        blockno++;
+    }
+
+    if (blockno < super->s_nblocks) {
+        CLRBIT(bitmap, blockno);
+        //flush_block(diskaddr(blockno));
+        flush_block(&bitmap[blockno / 32]);
+        return blockno;
+    }
 
     return 0;
 }
@@ -127,9 +137,28 @@ fs_init(void) {
  * Hint: Don't forget to clear any block you allocate. */
 int
 file_block_walk(struct File *f, blockno_t filebno, blockno_t **ppdiskbno, bool alloc) {
-    // LAB 10: Your code here
+    if (filebno >= NDIRECT + NINDIRECT) 
+        return -E_INVAL;
 
-    *ppdiskbno = 0;
+    if (filebno < NDIRECT) {
+        *ppdiskbno = f->f_direct + filebno;
+        return 0;
+    } 
+    
+    if (!f->f_indirect && !alloc)
+        return -E_NOT_FOUND;
+
+    if (!f->f_indirect && alloc) {
+        uint32_t newbno;
+
+        if ((newbno = alloc_block()) < 0)
+            return -E_NO_DISK;
+
+        f->f_indirect = newbno;
+        memset(diskaddr(newbno), 0, BLKSIZE);
+    }
+
+    *ppdiskbno = &((uint32_t *)diskaddr(f->f_indirect))[filebno - NDIRECT];
 
     return 0;
 }
@@ -144,10 +173,23 @@ file_block_walk(struct File *f, blockno_t filebno, blockno_t **ppdiskbno, bool a
  * Hint: Use file_block_walk and alloc_block. */
 int
 file_get_block(struct File *f, uint32_t filebno, char **blk) {
-    // LAB 10: Your code here
+    uint32_t *pdiskbno;
+    int r;
 
-    *blk = 0;
+    if ((r = file_block_walk(f, filebno, &pdiskbno, 1)) != 0) 
+        return r;
 
+    if (!(*pdiskbno)) {
+        uint32_t newbno;
+
+        if ((newbno = alloc_block()) < 0) 
+            return -E_NO_DISK;
+
+        *pdiskbno = newbno;
+        memset(diskaddr(newbno), 0, BLKSIZE);
+    }
+
+    *blk = diskaddr(*pdiskbno);
     return 0;
 }
 
