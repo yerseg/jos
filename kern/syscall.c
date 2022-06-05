@@ -408,8 +408,7 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf) {
  * from 1970-01-01 00:00:00 UTC. */
 static int
 sys_gettime(void) {
-    // LAB 12: Your code here
-    return 0;
+    return gettime();
 }
 
 /*
@@ -434,7 +433,6 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
     /* Call the function corresponding to the 'syscallno' parameter.
      * Return any appropriate return value. */
 
-    // LAB 12: Your code here
     switch (syscallno)
     {
         case SYS_cputs:                     return sys_cputs((const char *)a1, (size_t)a2);
@@ -452,6 +450,7 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
         case SYS_ipc_try_send:              return sys_ipc_try_send((envid_t)a1, (uint32_t)a2, a3,(size_t)a4,(int)a5);
         case SYS_ipc_recv:                  return sys_ipc_recv(a1, a2);
         case SYS_env_set_trapframe:         return sys_env_set_trapframe((envid_t)a1, (struct Trapframe *)a2);
+        case SYS_gettime:                   return sys_gettime();
     }
 
     return -E_NO_SYS;
