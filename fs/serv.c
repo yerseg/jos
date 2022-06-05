@@ -195,9 +195,20 @@ serve_read(envid_t envid, union Fsipc *ipc) {
                 envid, req->req_fileid, (uint32_t)req->req_n);
     }
 
-    // LAB 10: Your code here
+    struct OpenFile *o;
+    int r;
+    if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
+        return r;
+        
+    if (req->req_n > PAGE_SIZE) {
+        req->req_n = PAGE_SIZE;
+    }
 
-    return 0;
+    ssize_t num = file_read(o->o_file, &ipc->readRet.ret_buf, req->req_n, o->o_fd->fd_offset);
+    if (num > 0)
+        o->o_fd->fd_offset += num;
+
+    return num;
 }
 
 /* Write req->req_n bytes from req->req_buf to req_fileid, starting at
@@ -210,9 +221,16 @@ serve_write(envid_t envid, union Fsipc *ipc) {
     if (debug)
         cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, (uint32_t)req->req_n);
 
-    // LAB 10: Your code here
-
-    return 0;
+    struct OpenFile *o;
+    int r;
+    if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
+        return r;
+    
+    ssize_t num = file_write(o->o_file, &req->req_buf, req->req_n, o->o_fd->fd_offset);
+    if (num > 0)
+        o->o_fd->fd_offset += num;
+    
+    return num;
 }
 
 /* Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
