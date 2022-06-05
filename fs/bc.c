@@ -21,7 +21,7 @@ bc_pgfault(struct UTrapframe *utf) {
     blockno_t blockno = ((uintptr_t)addr - (uintptr_t)DISKMAP) / BLKSIZE;
 
     /* Check that the fault was within the block cache region */
-    if (addr < (void *)DISKMAP || addr >= (void *)(DISKMAP + DISKSIZE)) return 0;
+    if (addr < (void *)DISKMAP || addr >= (void *)(DISKMAP + DISKSIZE)) return false;
 
     /* Sanity check the block number. */
     if (super && blockno >= super->s_nblocks)
@@ -31,9 +31,15 @@ bc_pgfault(struct UTrapframe *utf) {
      * of the block from the disk into that page.
      * Hint: first round addr to page boundary. fs/ide.c has code to read
      * the disk. */
-    // LAB 10: Your code here
+    addr = ROUNDDOWN(addr, PAGE_SIZE);
 
-    return 1;
+    if (sys_alloc_region(CURENVID, addr, PAGE_SIZE, PTE_W | PTE_U | PTE_P))
+        panic("bc_pgfault error\n");
+
+    if (ide_read(blockno * BLKSECTS, addr, BLKSECTS)) 
+        panic("bc_pgfault error\n");
+
+    return true;
 }
 
 /* Flush the contents of the block containing VA out to disk if
@@ -52,8 +58,15 @@ flush_block(void *addr) {
     if (blockno && super && blockno >= super->s_nblocks)
         panic("reading non-existent block %08x out of %08x\n", blockno, super->s_nblocks);
 
-    // LAB 10: Your code here.
+    addr = ROUNDDOWN(addr, PAGE_SIZE);
+    if (!is_page_present(addr) || !is_page_dirty(addr))
+        return;
 
+    if (ide_write(blockno * BLKSECTS, addr, BLKSECTS))
+        panic("Error in ide_write\n");
+
+    if (sys_map_region(CURENVID, addr, CURENVID, addr, BLKSIZE, get_uvpt_entry(addr) & PTE_SYSCALL))
+        panic("Error in sys_map_region\n");
 
     assert(!is_page_dirty(addr));
 }
