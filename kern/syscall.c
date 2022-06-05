@@ -387,7 +387,20 @@ sys_ipc_recv(uintptr_t dstva, uintptr_t maxsize) {
  */
 static int
 sys_env_set_trapframe(envid_t envid, struct Trapframe *tf) {
-    // LAB 11: Your code here
+    struct Env* env = NULL;
+    if (envid2env(envid, &env, false) < 0) 
+        return -E_BAD_ENV;
+
+    user_mem_assert(env, tf, sizeof(struct Trapframe), PROT_USER_ | PROT_R);
+    nosan_memcpy((void*)&env->env_tf, (void*)tf, sizeof(struct Trapframe));
+
+    env->env_tf.tf_cs = GD_UT | 3;
+    env->env_tf.tf_ds = GD_UD | 3;
+    env->env_tf.tf_es = GD_UD | 3;
+    env->env_tf.tf_ss = GD_UD | 3;
+    env->env_tf.tf_rflags &= 0xFFF;
+    env->env_tf.tf_rflags |= FL_IF;
+
     return 0;
 }
 
@@ -413,7 +426,6 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
     /* Call the function corresponding to the 'syscallno' parameter.
      * Return any appropriate return value. */
 
-    // LAB 11: Your code here
     switch (syscallno)
     {
         case SYS_cputs:                     return sys_cputs((const char *)a1, (size_t)a2);
@@ -430,6 +442,7 @@ syscall(uintptr_t syscallno, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t
         case SYS_yield:                     { sys_yield(); return 0; }
         case SYS_ipc_try_send:              return sys_ipc_try_send((envid_t)a1, (uint32_t)a2, a3,(size_t)a4,(int)a5);
         case SYS_ipc_recv:                  return sys_ipc_recv(a1, a2);
+        case SYS_env_set_trapframe:         return sys_env_set_trapframe((envid_t)a1, (struct Trapframe *)a2);
     }
 
     return -E_NO_SYS;
