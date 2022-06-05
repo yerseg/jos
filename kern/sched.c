@@ -24,8 +24,24 @@ sched_yield(void) {
      * simply drop through to the code
      * below to halt the cpu */
 
-    // LAB 3: Your code here:
-    env_run(&envs[0]);
+    size_t curr_idx = curenv ? ENVX(curenv->env_id) : 0;
+    size_t old_idx = curr_idx;
+    while (1) {
+        curr_idx = (curr_idx + 1) % NENV;
+        struct Env *env = envs + curr_idx;
+
+        if (env->env_status == ENV_RUNNABLE) {
+            env_run(env);
+        }
+
+        if (curr_idx == old_idx) {
+			if (env->env_status == ENV_RUNNING) {
+				env_run(env);
+			}
+
+			break;
+		}
+    }
 
     cprintf("Halt\n");
 
